@@ -1,118 +1,140 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React from "react";
+import { SafeAreaView, FlatList, StyleSheet, Text, View, Image, TouchableOpacity } from "react-native";
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+const pleasures = [
+  {
+	id: "1",
+	title: "Instagram",
+	image: require('./res/instagram.png'),
+  },
+  {
+	id: "2",
+	title: "YouTube",
+	image: require('./res/youtube.png')
+  },
+  {
+	id: "3",
+	title: "TikTok",
+	image: require('./res/tiktok.png')
+  },
+  {
+	id: "4",
+	title: "Reddit",
+	image: require('./res/reddit.png')
+  },
+  {
+	id: "5",
+	title: "Facebook",
+	image: require('./res/facebook.png')
+  },
+  {
+	id: "6",
+	title: "LinkedIn",
+	image: require('./res/linkedin.png')
+  },
+  {
+	id: "7",
+	title: "X",
+	image: require('./res/x.png')
+  },
+  {
+	id: "8",
+	title: "Netflix",
+	image: require('./res/netflix.png')
+  }
+];
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+type ItemProps = {title: string, image: any};
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+const Item = ({title, image}: ItemProps) => (
+  <View style={styles.item}>
+    <Image key={title} source={image} style={styles.image}/>
+    <Text style={styles.title}>{title}</Text>
+    <TouchableOpacity style={styles.button}>
+        <Text style={styles.buttonLabel}>Use</Text>
+    </TouchableOpacity>
+  </View>
+);
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+export default function App() {
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+  const myItemSeparator = () => {
+    return <View style={{ height: 1, backgroundColor: "grey",marginHorizontal:10}} />;
+    };
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const myListEmpty = () => {
+    return (
+      <View style={{ alignItems: "center" }}>
+      <Text style={styles.item}>No data found</Text>
+      </View>
+    );
   };
 
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+return (
+  <SafeAreaView style={styles.container}>
+    <FlatList
+      data={pleasures}
+      renderItem={({ item }) => <Item title={item.title} image={item.image}/>}
+      keyExtractor={(item) => item.id}
+      ItemSeparatorComponent={myItemSeparator}
+      ListEmptyComponent={myListEmpty}
+      ListHeaderComponent={() => (
+        <Text style={styles.heading}>
+          Pleasures
+        </Text>
+      )}
+      ListFooterComponent={() => (
+        <Text style={{ fontSize: 30, textAlign: "center",marginBottom:20,fontWeight:'bold' }}>{}</Text>
+      )}
+    />
+  </SafeAreaView>
   );
-}
+ }
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
+    marginTop: 5,
+    backgroundColor: '#212121'
   },
-  sectionTitle: {
+  heading: {
+   fontSize: 30,
+   color: 'white',
+   textAlign: "center",
+   marginTop:20,
+   fontWeight:'bold',
+   textDecorationLine: 'underline'
+  },
+  item: {
+    padding: 20,
+    paddingEnd: 32,
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center'
+  },
+  title: {
     fontSize: 24,
-    fontWeight: '600',
+    color: 'white'
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  image: {
+    width: 50,
+    height: 50,
+    marginEnd: 12,
+    borderColor: '#0250a3'
   },
-  highlight: {
-    fontWeight: '700',
+  button: {
+    marginLeft: 'auto',
+    marginRight: '12',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 4,
+    backgroundColor: 'oldlace',
+    alignSelf: 'flex-end',
+    textAlign: 'center'
   },
+  buttonLabel: {
+    fontSize: 20,
+    color: 'black'
+  }
 });
-
-export default App;
