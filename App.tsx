@@ -51,7 +51,7 @@ const Item = ({title, image}: ItemProps) => (
     <Image key={title} source={image} style={styles.image}/>
     <Text style={styles.title}>{title}</Text>
     <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonLabel}>Use</Text>
+      <Text style={styles.buttonLabel}>Use</Text>
     </TouchableOpacity>
   </View>
 );
@@ -115,26 +115,35 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    color: 'white'
+    color: '#ffffff'
   },
   image: {
     width: 50,
     height: 50,
     marginEnd: 12,
-    borderColor: '#0250a3'
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#3d3d3d',
   },
   button: {
     marginLeft: 'auto',
     marginRight: '12',
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 4,
-    backgroundColor: 'oldlace',
+    borderRadius: 12,
+    borderColor: '#121212',
+    backgroundColor: '#3d3d3d',
+    borderWidth: 1,
     alignSelf: 'flex-end',
-    textAlign: 'center'
+    textAlign: 'center',
+    shadowColor: '#121212',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 3,
   },
   buttonLabel: {
     fontSize: 20,
-    color: 'black'
+    color: '#ffffff'
   }
 });
