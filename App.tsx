@@ -1,68 +1,75 @@
-import React from "react";
-import { SafeAreaView, FlatList, StyleSheet, Text, View, Image, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import { SafeAreaView, FlatList, StyleSheet, Text, View, Image, TouchableOpacity} from "react-native";
+import {
+  Grayscale,
+} from 'react-native-color-matrix-image-filters'
 
-const pleasures = [
-  {
-	id: "1",
-	title: "Instagram",
-	image: require('./res/instagram.png'),
-  },
-  {
-	id: "2",
-	title: "YouTube",
-	image: require('./res/youtube.png')
-  },
-  {
-	id: "3",
-	title: "TikTok",
-	image: require('./res/tiktok.png')
-  },
-  {
-	id: "4",
-	title: "Reddit",
-	image: require('./res/reddit.png')
-  },
-  {
-	id: "5",
-	title: "Facebook",
-	image: require('./res/facebook.png')
-  },
-  {
-	id: "6",
-	title: "LinkedIn",
-	image: require('./res/linkedin.png')
-  },
-  {
-	id: "7",
-	title: "X",
-	image: require('./res/x.png')
-  },
-  {
-	id: "8",
-	title: "Netflix",
-	image: require('./res/netflix.png')
-  }
-];
+const DEFAULT_UUID = 0
 
-type ItemProps = {title: string, image: any};
+const app_images = {
+    "instagram": require('./res/instagram.png'),
+    "youtube": require('./res/youtube.png'),
+    "tiktok": require('./res/tiktok.png'),
+    "reddit": require('./res/reddit.png'),
+    "facebook": require('./res/facebook.png'),
+    "linkedin": require('./res/linkedin.png'),
+    "x": require('./res/x.png'),
+    "netflix": require('./res/netflix.png')
+}
 
-const Item = ({title, image}: ItemProps) => (
-  <View style={styles.item}>
-    <Image key={title} source={image} style={styles.image}/>
-    <Text style={styles.title}>{title}</Text>
-    <TouchableOpacity style={styles.button}>
-      <Text style={styles.buttonLabel}>Use</Text>
-    </TouchableOpacity>
-  </View>
-);
+type AppItemProps = {id: number, appId: string, appName: string, disabled: boolean, image: any};
 
-export default function App() {
+function useApp(appId: string) {
+    console.log("Using app ", appId);
+    const url = "http://sokrat.xyz:5000/apps"
+    const data = { uuid: DEFAULT_UUID, app: appId }
 
-  const myItemSeparator = () => {
+    const params = new URLSearchParams(data).toString();
+    const fullUrl = url + "?" + params;
+
+    fetch(fullUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        }
+    }).then((res) => {
+        return res.json()
+    }).then((data) => {
+        console.log(data)
+    }).catch(console.err);
+}
+
+const AppItem = (props: AppItemProps) => {
+  const {id, appId, appName, disabled, image} = props;
+  const disabledStyle = {opacity: (disabled) ? 0.3 : 1};
+  const imageComp = (
+    <Image key={appId} source={image} style={[styles.image, disabledStyle]}/>
+  )
+  const activeImageComp = (
+    disabled ? <Grayscale>{imageComp}</Grayscale> : imageComp
+  )
+
+
+  return (
+    <View style={styles.item}>
+      {activeImageComp}
+      <Text style={[styles.title, disabledStyle]}>{appName}</Text>
+      <TouchableOpacity style={[styles.button, disabledStyle]} disabled={disabled} onPress={() => useApp(appId)}>
+        <Text style={styles.buttonLabel}>Use</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+export default function Application() {
+
+  const [apps, setApps] = useState<AppItemProps>([]);
+
+  const itemSeparator = () => {
     return <View style={{ height: 1, backgroundColor: "grey",marginHorizontal:10}} />;
     };
 
-  const myListEmpty = () => {
+  const listEmpty = () => {
     return (
       <View style={{ alignItems: "center" }}>
       <Text style={styles.item}>No data found</Text>
@@ -70,17 +77,40 @@ export default function App() {
     );
   };
 
-return (
+  useEffect(() => {
+    fetch("http://sokrat.xyz:5000/apps", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+    }).then((res) => {
+        return res.json()
+    }).then((data) => {
+        console.log(JSON.stringify(data, null, 4));
+        const user_apps = Object.keys(data["apps"]).map((app, index) => {
+            return {
+                "id": index,
+                "appId": app,
+                "appName": data["apps"][app]["app_name"],
+                "image": app_images[app],
+                "disabled": !data["apps"][app]["today"]["allowed"]
+            };
+        })
+        setApps(user_apps);
+    }).catch(console.err);
+  }, [])
+
+  return (
   <SafeAreaView style={styles.container}>
     <FlatList
-      data={pleasures}
-      renderItem={({ item }) => <Item title={item.title} image={item.image}/>}
+      data={apps}
+      renderItem={({ item }) => <AppItem disabled={item.disabled} id={item.id} appId={item.appId} appName={item.appName} image={item.image}/>}
       keyExtractor={(item) => item.id}
-      ItemSeparatorComponent={myItemSeparator}
-      ListEmptyComponent={myListEmpty}
+      ItemSeparatorComponent={itemSeparator}
+      ListEmptyComponent={listEmpty}
       ListHeaderComponent={() => (
         <Text style={styles.heading}>
-          Pleasures
+          Apps
         </Text>
       )}
       ListFooterComponent={() => (
@@ -124,6 +154,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#3d3d3d',
+    opacity: 0.3
   },
   button: {
     marginLeft: 'auto',
@@ -132,7 +163,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 12,
     borderColor: '#121212',
-    backgroundColor: '#3d3d3d',
+    backgroundColor: '#142ca4', // #3d3d3d
     borderWidth: 1,
     alignSelf: 'flex-end',
     textAlign: 'center',
@@ -141,9 +172,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 12,
     elevation: 3,
+    opacity: 0.3
   },
   buttonLabel: {
     fontSize: 20,
-    color: '#ffffff'
+    color: '#ffffff',
+    opacity: 0.5
   }
 });
