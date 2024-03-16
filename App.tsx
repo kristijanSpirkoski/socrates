@@ -6,7 +6,7 @@ import {
 
 const DEFAULT_UUID = 0
 
-const app_images = {
+const appImages = {
     "instagram": require('./res/instagram.png'),
     "youtube": require('./res/youtube.png'),
     "tiktok": require('./res/tiktok.png'),
@@ -17,31 +17,20 @@ const app_images = {
     "netflix": require('./res/netflix.png')
 }
 
-type AppItemProps = {id: number, appId: string, appName: string, disabled: boolean, image: any};
-
-function useApp(appId: string) {
-    console.log("Using app ", appId);
-    const url = "http://sokrat.xyz:5000/apps"
-    const data = { uuid: DEFAULT_UUID, app: appId }
-
-    const params = new URLSearchParams(data).toString();
-    const fullUrl = url + "?" + params;
-
-    fetch(fullUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        }
-    }).then((res) => {
-        return res.json()
-    }).then((data) => {
-        console.log(data)
-    }).catch(console.err);
-}
+type AppItemProps = {
+    id: number,
+    appId: string,
+    appName: string,
+    disabled: boolean,
+    useApp: (appId: string) => void;
+};
 
 const AppItem = (props: AppItemProps) => {
-  const {id, appId, appName, disabled, image} = props;
+  const {id, appId, appName, disabled, useApp} = props;
   const disabledStyle = {opacity: (disabled) ? 0.3 : 1};
+
+  // create image component
+  const image = appImages[appId];
   const imageComp = (
     <Image key={appId} source={image} style={[styles.image, disabledStyle]}/>
   )
@@ -49,12 +38,14 @@ const AppItem = (props: AppItemProps) => {
     disabled ? <Grayscale>{imageComp}</Grayscale> : imageComp
   )
 
-
   return (
     <View style={styles.item}>
       {activeImageComp}
       <Text style={[styles.title, disabledStyle]}>{appName}</Text>
-      <TouchableOpacity style={[styles.button, disabledStyle]} disabled={disabled} onPress={() => useApp(appId)}>
+      <TouchableOpacity
+        style={[styles.button, disabledStyle]}
+        disabled={disabled}
+        onPress={() => useApp(appId)}>
         <Text style={styles.buttonLabel}>Use</Text>
       </TouchableOpacity>
     </View>
@@ -67,7 +58,7 @@ export default function Application() {
 
   const itemSeparator = () => {
     return <View style={{ height: 1, backgroundColor: "grey",marginHorizontal:10}} />;
-    };
+  };
 
   const listEmpty = () => {
     return (
@@ -78,7 +69,7 @@ export default function Application() {
   };
 
   useEffect(() => {
-    fetch("http://sokrat.xyz:5000/apps", {
+    fetch(`http://sokrat.xyz:5000/users/${DEFAULT_UUID}/apps`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -92,7 +83,6 @@ export default function Application() {
                 "id": index,
                 "appId": app,
                 "appName": data["apps"][app]["app_name"],
-                "image": app_images[app],
                 "disabled": !data["apps"][app]["today"]["allowed"]
             };
         })
@@ -100,11 +90,34 @@ export default function Application() {
     }).catch(console.err);
   }, [])
 
+  const useApp = (appId: string) => {
+    console.log("Using app ", appId);
+    const url = `http://sokrat.xyz:5000/users/${DEFAULT_UUID}/apps/${appId}`
+
+    fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    }).catch(console.err);
+
+    const updatedApps = apps.map((app) => {
+        if (app.appId === appId) {
+            return {
+                ...app,
+                disabled: true,
+            }
+        }
+        return app;
+    });
+    setApps(updatedApps);
+  }
+
   return (
   <SafeAreaView style={styles.container}>
     <FlatList
       data={apps}
-      renderItem={({ item }) => <AppItem disabled={item.disabled} id={item.id} appId={item.appId} appName={item.appName} image={item.image}/>}
+      renderItem={({ item }) => <AppItem useApp={useApp} disabled={item.disabled} id={item.id} appId={item.appId} appName={item.appName}/>}
       keyExtractor={(item) => item.id}
       ItemSeparatorComponent={itemSeparator}
       ListEmptyComponent={listEmpty}
