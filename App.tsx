@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { SafeAreaView, FlatList, StyleSheet, Text, View, Image, TouchableOpacity} from "react-native";
+import {
+    SafeAreaView,
+    FlatList,
+    StyleSheet,
+    Text,
+    View,
+    Image,
+    TouchableOpacity,
+    ToastAndroid,
+    Platform,
+    AlertIOS
+} from "react-native";
 import {
   Grayscale,
 } from 'react-native-color-matrix-image-filters'
+
+import SlickModal from './SlickModal';
 
 const DEFAULT_UUID = 0
 
@@ -22,7 +35,7 @@ type AppItemProps = {
     appId: string,
     appName: string,
     disabled: boolean,
-    useApp: (appId: string) => void;
+    useApp: (appId: string, appName: string) => void;
 };
 
 const AppItem = (props: AppItemProps) => {
@@ -45,7 +58,7 @@ const AppItem = (props: AppItemProps) => {
       <TouchableOpacity
         style={[styles.button, disabledStyle]}
         disabled={disabled}
-        onPress={() => useApp(appId)}>
+        onPress={() => useApp(appId, appName)}>
         <Text style={styles.buttonLabel}>Use</Text>
       </TouchableOpacity>
     </View>
@@ -90,7 +103,7 @@ export default function Application() {
     }).catch(console.err);
   }, [])
 
-  const useApp = (appId: string) => {
+  const useApp = (appId: string, appName: string) => {
     console.log("Using app ", appId);
     const url = `http://sokrat.xyz:5000/users/${DEFAULT_UUID}/apps/${appId}`
 
@@ -98,6 +111,13 @@ export default function Application() {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
+        }
+    }).then(() => {
+        const notification = `You can now use ${appName}`;
+        if (Platform.OS === 'android') {
+          ToastAndroid.show(notification, ToastAndroid.LONG);
+        } else {
+          AlertIOS.alert(notification);
         }
     }).catch(console.err);
 
@@ -113,8 +133,12 @@ export default function Application() {
     setApps(updatedApps);
   }
 
+  const [modalVisible, setModalVisible] = useState(true);
+
   return (
   <SafeAreaView style={styles.container}>
+    <SlickModal isVisible={modalVisible} setIsVisible={setModalVisible}>
+    </SlickModal>
     <FlatList
       data={apps}
       renderItem={({ item }) => <AppItem useApp={useApp} disabled={item.disabled} id={item.id} appId={item.appId} appName={item.appName}/>}
