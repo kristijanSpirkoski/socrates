@@ -7,6 +7,7 @@ import {
     View,
     Image,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     ToastAndroid,
     Platform,
     AlertIOS
@@ -18,6 +19,8 @@ import {
 import SlickModal from './SlickModal';
 
 const DEFAULT_UUID = 0
+const HOST = '178-79-134-180.ip.linodeusercontent.com'; // sokrat.xyz
+const PORT = '5000';
 
 const appImages = {
     "instagram": require('./res/instagram.png'),
@@ -30,38 +33,75 @@ const appImages = {
     "netflix": require('./res/netflix.png')
 }
 
+type AppInfo = {
+    appId: string,
+    appName: string
+};
+
+type AppModeration = {
+    daysPerWeek: number,
+    minutesPerDay: number,
+}
+
+type DayStatus = {
+    status: 'used' | 'usable' | 'unusable',
+    usage: number
+};
+
+type AppHistory = {
+    thisWeek: {
+        monday?: DayStatus,
+        tuesday?: DayStatus,
+        wednesday?: DayStatus,
+        thursday?: DayStatus,
+        friday?: DayStatus,
+        saturday?: DayStatus,
+        sunday?: DayStatus,
+    }
+}
+
 type AppItemProps = {
     id: number,
-    appId: string,
-    appName: string,
+    app: AppInfo,
     disabled: boolean,
-    useApp: (appId: string, appName: string) => void;
+    moderation: AppModeration,
+    history: AppHistory,
+    useApp: (appInfo: AppInfo) => void;
+    checkoutApp: (
+        appInfo: AppInfo,
+        appModeration: AppModeration,
+        appHistory: AppHistory,
+    ) => void;
 };
 
 const AppItem = (props: AppItemProps) => {
-  const {id, appId, appName, disabled, useApp} = props;
+  const {id, app, disabled, moderation, history, useApp, checkoutApp} = props;
+  const { appId, appName } = app;
   const disabledStyle = {opacity: (disabled) ? 0.3 : 1};
-
   // create image component
   const image = appImages[appId];
   const imageComp = (
-    <Image key={appId} source={image} style={[styles.image, disabledStyle]}/>
-  )
+    <React.Fragment>
+        <Image key={appId} source={image} style={[styles.image, disabledStyle]}/>
+    </React.Fragment>
+  );
   const activeImageComp = (
     disabled ? <Grayscale>{imageComp}</Grayscale> : imageComp
   )
 
   return (
-    <View style={styles.item}>
-      {activeImageComp}
-      <Text style={[styles.title, disabledStyle]}>{appName}</Text>
-      <TouchableOpacity
-        style={[styles.button, disabledStyle]}
-        disabled={disabled}
-        onPress={() => useApp(appId, appName)}>
-        <Text style={styles.buttonLabel}>Use</Text>
-      </TouchableOpacity>
-    </View>
+    <TouchableWithoutFeedback onPress={ () => checkoutApp(app, moderation, history)}>
+        <View style={styles.item}>
+          {activeImageComp}
+          <Text style={[styles.title, disabledStyle]}>{appName}</Text>
+          <TouchableOpacity
+            style={[styles.button, disabledStyle]}
+            disabled={disabled}
+            onPress={() => useApp({appId, appName})}>
+            <Text style={styles.buttonLabel}>Use</Text>
+          </TouchableOpacity>
+        </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -82,7 +122,7 @@ export default function Application() {
   };
 
   useEffect(() => {
-    fetch(`http://sokrat.xyz:5000/users/${DEFAULT_UUID}/apps`, {
+    fetch(`http://${HOST}:${PORT}/users/${DEFAULT_UUID}/apps`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -94,18 +134,39 @@ export default function Application() {
         const user_apps = Object.keys(data["apps"]).map((app, index) => {
             return {
                 "id": index,
-                "appId": app,
-                "appName": data["apps"][app]["app_name"],
-                "disabled": !data["apps"][app]["today"]["allowed"]
+                "app": {
+                    "appId": app,
+                    "appName": data["apps"][app]["app_name"],
+                },
+                "moderation": {
+                    "minutesPerDay": data["apps"][app]["moderation"]["minutes_per_day"],
+                    "daysPerWeek": data["apps"][app]["moderation"]["days_per_week"],
+                },
+                "history": {"thisWeek": data["apps"][app]["this_week"]},
+                "disabled": !(data["apps"][app]["today"]["status"] === "usable")
             };
         })
         setApps(user_apps);
     }).catch(console.err);
   }, [])
 
-  const useApp = (appId: string, appName: string) => {
+  const useApp = (appInfo: AppInfo) => {
+    const {appId, appName} = appInfo;
     console.log("Using app ", appId);
-    const url = `http://sokrat.xyz:5000/users/${DEFAULT_UUID}/apps/${appId}`
+
+    const updatedApps = apps.map((app) => {
+        if (app['app']['appId'] === appId) {
+            return {
+                ...app,
+                disabled: true,
+            }
+        }
+        return app;
+    });
+    setApps(updatedApps);
+
+
+    const url = `http://${HOST}:${PORT}/users/${DEFAULT_UUID}/apps/${appId}`
 
     fetch(url, {
         method: "POST",
@@ -120,28 +181,57 @@ export default function Application() {
           AlertIOS.alert(notification);
         }
     }).catch(console.err);
-
-    const updatedApps = apps.map((app) => {
-        if (app.appId === appId) {
-            return {
-                ...app,
-                disabled: true,
-            }
-        }
-        return app;
-    });
-    setApps(updatedApps);
   }
 
-  const [modalVisible, setModalVisible] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalBody, setModalBody] = useState('');
 
   return (
   <SafeAreaView style={styles.container}>
-    <SlickModal isVisible={modalVisible} setIsVisible={setModalVisible}>
+    <View>
+    <SlickModal title={modalTitle} body={modalBody} isVisible={modalVisible} setIsVisible={setModalVisible}>
     </SlickModal>
+    </View>
     <FlatList
       data={apps}
-      renderItem={({ item }) => <AppItem useApp={useApp} disabled={item.disabled} id={item.id} appId={item.appId} appName={item.appName}/>}
+      renderItem={({ item }) => <AppItem
+       checkoutApp={(appInfo: AppInfo, appModeration: AppModeration, appHistory: AppHistory) => {
+            const {appId, appName} = appInfo;
+            const {minutesPerDay, daysPerWeek} = appModeration;
+
+            const thisWeek = appHistory['thisWeek'];
+            let historyLabel = '';
+            historyLabel += thisWeek['monday'] ? `Monday: ${thisWeek['monday']['status']}\n` : '';
+            historyLabel += thisWeek['tuesday'] ? `Tuesday: ${thisWeek['tuesday']['status']}\n` : '';
+            historyLabel += thisWeek['wednesday'] ? `Wednesday: ${thisWeek['wednesday']['status']}\n` : '';
+            historyLabel += thisWeek['thursday'] ? `Thursday: ${thisWeek['thursday']['status']}\n` : '';
+            historyLabel += thisWeek['friday'] ? `Friday: ${thisWeek['friday']['status']}\n` : '';
+            historyLabel += thisWeek['saturday'] ? `Saturday: ${thisWeek['saturday']['status']}\n` : '';
+            historyLabel += thisWeek['sunday'] ? `Sunday: ${thisWeek['sunday']['status']}\n` : '';
+
+            setModalVisible(true);
+            setModalTitle(appName + '\n');
+            const body =
+            `================================\n` +
+            `+          Moderation          +\n` +
+            `================================\n` +
+            `Your configuration for ${appName} is:\n`  +
+            `${minutesPerDay} minutes per day\n` +
+            `${daysPerWeek} days per week\n\n` +
+            `================================\n` +
+            `+          This Week           +\n` +
+            `================================\n` +
+            `${historyLabel}`;
+            setModalBody(body);
+       }}
+       useApp={useApp}
+       disabled={item.disabled}
+       id={item.id}
+       app={item.app}
+       moderation={item.moderation}
+       history={item.history}/>
+      }
       keyExtractor={(item) => item.id}
       ItemSeparatorComponent={itemSeparator}
       ListEmptyComponent={listEmpty}
@@ -181,7 +271,8 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   title: {
-    fontSize: 24,
+    fontFamily: 'monospace',
+    fontSize: 22,
     color: '#ffffff'
   },
   image: {
@@ -194,6 +285,7 @@ const styles = StyleSheet.create({
     opacity: 0.3
   },
   button: {
+    color: '#ffffff',
     marginLeft: 'auto',
     marginRight: '12',
     paddingHorizontal: 14,
@@ -214,6 +306,7 @@ const styles = StyleSheet.create({
   buttonLabel: {
     fontSize: 20,
     color: '#ffffff',
-    opacity: 0.5
+    opacity: 0.5,
+    fontFamily: 'monospace'
   }
 });

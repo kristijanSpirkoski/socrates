@@ -9,12 +9,14 @@ import {
 } from "react-native";
 
 type SlickModalProps = {
+    title: string;
+    body: string;
     isVisible: boolean;
     setIsVisible: (isVisible: boolean) => void;
 };
 
 const SlickModal = (props: SlickModalProps) => {
-    const { isVisible, setIsVisible } = props;
+    const { title, body, isVisible, setIsVisible } = props;
     return (
      <View>
         <Modal
@@ -30,11 +32,11 @@ const SlickModal = (props: SlickModalProps) => {
           >
             <ScrollView
               directionalLockEnabled={true}
-
             >
               <TouchableWithoutFeedback>
                 <View style={styles.modalContainer}>
-                  <Text>HELLO</Text>
+                  <Text style={styles.content}>{title}</Text>
+                  <Text style={styles.content}>{body}</Text>
                 </View>
               </TouchableWithoutFeedback>
             </ScrollView>
@@ -47,16 +49,32 @@ const SlickModal = (props: SlickModalProps) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContainer: {
-    width: '75%',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#cdd2c9',
-    backgroundColor: '#cdd2c9',
-    alignSelf: 'baseline',
+    flex: 1,
+    flexDirection: 'column',
+    margin: 20,
+    backgroundColor: '#142ca4',
+    borderRadius: 20,
+    borderWidth: 2,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  content: {
+    color: '#ffffff',
+    fontFamily: 'monospace',
+    textAlign: 'center',
   }
  });
 
