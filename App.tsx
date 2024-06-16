@@ -3,6 +3,7 @@ import {
     SafeAreaView,
     FlatList,
     StyleSheet,
+    RefreshControl,
     Text,
     View,
     Image,
@@ -110,7 +111,7 @@ export default function Application() {
   const [apps, setApps] = useState<AppItemProps>([]);
 
   const itemSeparator = () => {
-    return <View style={{ height: 1, backgroundColor: "grey",marginHorizontal:10}} />;
+    return <View style={{ height: 1, backgroundColor: "grey", marginHorizontal:10}} />;
   };
 
   const listEmpty = () => {
@@ -121,33 +122,38 @@ export default function Application() {
     );
   };
 
+  const initializeScreen = () => {
+      return fetch(`http://${HOST}:${PORT}/users/${DEFAULT_UUID}/apps`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+      }).then((res) => {
+          console.log("POOP");
+          return res.json()
+      }).then((data) => {
+          console.log(JSON.stringify(data, null, 4));
+          const user_apps = Object.keys(data["apps"]).map((app, index) => {
+              return {
+                  "id": index,
+                  "app": {
+                      "appId": app,
+                      "appName": data["apps"][app]["app_name"],
+                  },
+                  "moderation": {
+                      "minutesPerDay": data["apps"][app]["moderation"]["minutes_per_day"],
+                      "daysPerWeek": data["apps"][app]["moderation"]["days_per_week"],
+                  },
+                  "history": {"thisWeek": data["apps"][app]["this_week"]},
+                  "disabled": !(data["apps"][app]["today"]["status"] === "usable")
+              };
+          })
+          setApps(user_apps);
+      }).catch(console.err);
+  }
+
   useEffect(() => {
-    fetch(`https://${HOST}:${PORT}/users/${DEFAULT_UUID}/apps`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-    }).then((res) => {
-        return res.json()
-    }).then((data) => {
-        console.log(JSON.stringify(data, null, 4));
-        const user_apps = Object.keys(data["apps"]).map((app, index) => {
-            return {
-                "id": index,
-                "app": {
-                    "appId": app,
-                    "appName": data["apps"][app]["app_name"],
-                },
-                "moderation": {
-                    "minutesPerDay": data["apps"][app]["moderation"]["minutes_per_day"],
-                    "daysPerWeek": data["apps"][app]["moderation"]["days_per_week"],
-                },
-                "history": {"thisWeek": data["apps"][app]["this_week"]},
-                "disabled": !(data["apps"][app]["today"]["status"] === "usable")
-            };
-        })
-        setApps(user_apps);
-    }).catch(console.err);
+    initializeScreen();
   }, [])
 
   const useApp = (appInfo: AppInfo) => {
@@ -183,6 +189,13 @@ export default function Application() {
     }).catch(console.err);
   }
 
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    initializeScreen().then(() => { setRefreshing(false) })
+  }, []);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalBody, setModalBody] = useState('');
@@ -194,6 +207,9 @@ export default function Application() {
     </SlickModal>
     </View>
     <FlatList
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
       data={apps}
       renderItem={({ item }) => <AppItem
        checkoutApp={(appInfo: AppInfo, appModeration: AppModeration, appHistory: AppHistory) => {
@@ -240,9 +256,6 @@ export default function Application() {
           Apps
         </Text>
       )}
-      ListFooterComponent={() => (
-        <Text style={{ fontSize: 30, textAlign: "center",marginBottom:20,fontWeight:'bold' }}>{}</Text>
-      )}
     />
   </SafeAreaView>
   );
@@ -264,14 +277,13 @@ const styles = StyleSheet.create({
   },
   item: {
     padding: 20,
-    paddingEnd: 32,
+    paddingEnd: 20,
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center'
   },
   title: {
-    fontFamily: 'monospace',
     fontSize: 22,
     color: '#ffffff'
   },
@@ -286,8 +298,7 @@ const styles = StyleSheet.create({
   },
   button: {
     color: '#ffffff',
-    marginLeft: 'auto',
-    marginRight: '12',
+    marginStart: 'auto',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
@@ -305,8 +316,6 @@ const styles = StyleSheet.create({
   },
   buttonLabel: {
     fontSize: 20,
-    color: '#ffffff',
-    opacity: 0.5,
-    fontFamily: 'monospace'
+    color: '#ffffff'
   }
 });
