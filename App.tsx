@@ -200,6 +200,36 @@ export default function Application() {
   const [modalTitle, setModalTitle] = useState('');
   const [modalBody, setModalBody] = useState('');
 
+  const checkoutApp = (appInfo: AppInfo, appModeration: AppModeration, appHistory: AppHistory) => {
+      const {appId, appName} = appInfo;
+      const {minutesPerDay, daysPerWeek} = appModeration;
+
+      const thisWeek = appHistory['thisWeek'];
+      let historyLabel = '';
+      historyLabel += thisWeek['monday'] ? `Monday: ${thisWeek['monday']['status']}\n` : '';
+      historyLabel += thisWeek['tuesday'] ? `Tuesday: ${thisWeek['tuesday']['status']}\n` : '';
+      historyLabel += thisWeek['wednesday'] ? `Wednesday: ${thisWeek['wednesday']['status']}\n` : '';
+      historyLabel += thisWeek['thursday'] ? `Thursday: ${thisWeek['thursday']['status']}\n` : '';
+      historyLabel += thisWeek['friday'] ? `Friday: ${thisWeek['friday']['status']}\n` : '';
+      historyLabel += thisWeek['saturday'] ? `Saturday: ${thisWeek['saturday']['status']}\n` : '';
+      historyLabel += thisWeek['sunday'] ? `Sunday: ${thisWeek['sunday']['status']}\n` : '';
+
+      setModalVisible(true);
+      setModalTitle(appName + '\n');
+      const body =
+      `================================\n` +
+      `+          Moderation          +\n` +
+      `================================\n` +
+      `Your configuration for ${appName} is:\n`  +
+      `${minutesPerDay} minutes per day\n` +
+      `${daysPerWeek} days per week\n\n` +
+      `================================\n` +
+      `+          This Week           +\n` +
+      `================================\n` +
+      `${historyLabel}`;
+      setModalBody(body);
+  }
+
   return (
   <SafeAreaView style={styles.container}>
     <View>
@@ -212,35 +242,7 @@ export default function Application() {
       }
       data={apps}
       renderItem={({ item }) => <AppItem
-       checkoutApp={(appInfo: AppInfo, appModeration: AppModeration, appHistory: AppHistory) => {
-            const {appId, appName} = appInfo;
-            const {minutesPerDay, daysPerWeek} = appModeration;
-
-            const thisWeek = appHistory['thisWeek'];
-            let historyLabel = '';
-            historyLabel += thisWeek['monday'] ? `Monday: ${thisWeek['monday']['status']}\n` : '';
-            historyLabel += thisWeek['tuesday'] ? `Tuesday: ${thisWeek['tuesday']['status']}\n` : '';
-            historyLabel += thisWeek['wednesday'] ? `Wednesday: ${thisWeek['wednesday']['status']}\n` : '';
-            historyLabel += thisWeek['thursday'] ? `Thursday: ${thisWeek['thursday']['status']}\n` : '';
-            historyLabel += thisWeek['friday'] ? `Friday: ${thisWeek['friday']['status']}\n` : '';
-            historyLabel += thisWeek['saturday'] ? `Saturday: ${thisWeek['saturday']['status']}\n` : '';
-            historyLabel += thisWeek['sunday'] ? `Sunday: ${thisWeek['sunday']['status']}\n` : '';
-
-            setModalVisible(true);
-            setModalTitle(appName + '\n');
-            const body =
-            `================================\n` +
-            `+          Moderation          +\n` +
-            `================================\n` +
-            `Your configuration for ${appName} is:\n`  +
-            `${minutesPerDay} minutes per day\n` +
-            `${daysPerWeek} days per week\n\n` +
-            `================================\n` +
-            `+          This Week           +\n` +
-            `================================\n` +
-            `${historyLabel}`;
-            setModalBody(body);
-       }}
+       checkoutApp={checkoutApp}
        useApp={useApp}
        disabled={item.disabled}
        id={item.id}
@@ -252,9 +254,7 @@ export default function Application() {
       ItemSeparatorComponent={itemSeparator}
       ListEmptyComponent={listEmpty}
       ListHeaderComponent={() => (
-        <Text style={styles.heading}>
-          Apps
-        </Text>
+        <View style={styles.header}/>
       )}
     />
   </SafeAreaView>
@@ -264,7 +264,6 @@ export default function Application() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 5,
     backgroundColor: '#212121'
   },
   heading: {
@@ -317,5 +316,10 @@ const styles = StyleSheet.create({
   buttonLabel: {
     fontSize: 20,
     color: '#ffffff'
+  },
+  header: {
+    padding: 20,
+    backgroundColor: '#3d3d3d',
+    alignItems: 'center',
   }
 });
