@@ -122,7 +122,7 @@ export default function Application() {
   };
 
   useEffect(() => {
-    fetch(`http://${HOST}:${PORT}/users/${DEFAULT_UUID}/apps`, {
+    fetch(`https://${HOST}:${PORT}/users/${DEFAULT_UUID}/apps`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -166,7 +166,7 @@ export default function Application() {
     setApps(updatedApps);
 
 
-    const url = `http://${HOST}:${PORT}/users/${DEFAULT_UUID}/apps/${appId}`
+    const url = `https://${HOST}:${PORT}/users/${DEFAULT_UUID}/apps/${appId}`
 
     fetch(url, {
         method: "POST",
