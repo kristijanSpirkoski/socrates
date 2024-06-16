@@ -172,7 +172,7 @@ export default function Application() {
     setApps(updatedApps);
 
 
-    const url = `https://${HOST}:${PORT}/users/${DEFAULT_UUID}/apps/${appId}`
+    const url = `http://${HOST}:${PORT}/users/${DEFAULT_UUID}/apps/${appId}`
 
     fetch(url, {
         method: "POST",
